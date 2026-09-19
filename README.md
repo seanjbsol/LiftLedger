@@ -92,7 +92,7 @@ LiftLedger endpoints (JWT required):
 - `POST /api/billing/checkout` — Owner/Admin; proxies Qck checkout session (`{ url }`)
 - `POST /api/billing/portal` — Owner/Admin; proxies Qck customer portal session (`{ url }`)
 
-Authenticated tenant requests that need billing (assets, inspections, dashboard, clients) require an active or trial subscription. If the Qck entitlement status is not `active` or `trialing`, the API returns **402** with `checkout: "/api/billing/checkout"`. Auth, health, Swagger, `/api/billing/*` and `/api/public/*` are not gated.
+Authenticated tenant requests that need billing (assets, inspections, dashboard, clients) are gated. If the Qck entitlement status is not `active` or `trialing`, the API returns **402** with a JSON body that includes `checkout: "/api/billing/checkout"`. Auth, health, Swagger, `/api/billing/*` and `/api/public/*` are not gated.
 
 #### Plans (Starter vs Pro)
 
@@ -187,7 +187,7 @@ cp .env.example .env
 npx expo start
 ```
 
-Screens: sign in / register, home dashboard (overdue, due soon, recent examinations), assets list/detail/add with QR image and `liftledger://a/{code}` deep link, LOLER thorough examination form, PUWER assessment by asset class, examination history, defect workflow (assign, before/after photos, close / retest), settings (plan tier and client portal share link).
+Screens: sign in / register, home dashboard (overdue, due soon, recent examinations), assets list/detail/add with QR image and `liftledger://a/{code}` deep link, LOLER thorough examination form, PUWER assessment by asset class, examination history (offline copy saved on the device if the API is unreachable), defect workflow (assign, before/after photos, close / retest), settings (plan tier and client portal share link).
 
 Deep link: `liftledger://a/QR-TRI-1042` (or enter the code on the Assets tab) opens the last working record or starts an examination.
 
