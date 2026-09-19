@@ -66,7 +66,8 @@ public sealed class SubscriptionGateMiddleware
             || path.StartsWith("/swagger", StringComparison.OrdinalIgnoreCase)
             || path.StartsWith("/openapi", StringComparison.OrdinalIgnoreCase)
             || path.StartsWith("/api/auth", StringComparison.OrdinalIgnoreCase)
-            || path.StartsWith("/api/billing", StringComparison.OrdinalIgnoreCase))
+            || path.StartsWith("/api/billing", StringComparison.OrdinalIgnoreCase)
+            || path.StartsWith("/api/public", StringComparison.OrdinalIgnoreCase))
         {
             return true;
         }

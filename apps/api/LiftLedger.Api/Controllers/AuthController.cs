@@ -38,4 +38,11 @@ public class AuthController : ControllerBase
     {
         return Ok(await _auth.GetMeAsync(cancellationToken));
     }
+
+    [HttpGet("members")]
+    [Authorize]
+    public async Task<ActionResult<IReadOnlyList<MemberDto>>> Members(CancellationToken cancellationToken)
+    {
+        return Ok(await _auth.ListMembersAsync(cancellationToken));
+    }
 }

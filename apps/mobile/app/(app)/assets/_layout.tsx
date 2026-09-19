@@ -13,6 +13,7 @@ export default function AssetsStack() {
       <Stack.Screen name="index" options={{ title: 'Assets' }} />
       <Stack.Screen name="new" options={{ title: 'Add asset' }} />
       <Stack.Screen name="[id]" options={{ title: 'Asset' }} />
+      <Stack.Screen name="code/[code]" options={{ title: 'QR / ID code' }} />
     </Stack>
   );
 }

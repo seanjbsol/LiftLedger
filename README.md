@@ -62,6 +62,7 @@ Use the two owner accounts to confirm tenant isolation: Humber assets (e.g. `TRI
 - `POST /api/auth/register` — organisation name, owner email/password → tenant + JWT. Also upserts the tenant to the QckApp Subscription API (name, owner email, `externalTenantId`).
 - `POST /api/auth/login`
 - `GET /api/auth/me`
+- `GET /api/auth/members` — people in this organisation (for defect assignment)
 
 Roles: **Owner** and **Admin** manage clients/sites and archive assets; **Examiner** can create assets and complete examinations; **Viewer** is read-only.
 
@@ -87,17 +88,28 @@ Qck paths used by the client:
 
 LiftLedger endpoints (JWT required):
 
-- `GET /api/billing/entitlements` — current plan/status for mobile Settings
+- `GET /api/billing/entitlements` — current plan/status plus Starter/Pro feature flags for mobile Settings
 - `POST /api/billing/checkout` — Owner/Admin; proxies Qck checkout session (`{ url }`)
 - `POST /api/billing/portal` — Owner/Admin; proxies Qck customer portal session (`{ url }`)
 
-Authenticated tenant requests that need billing (assets, inspections, dashboard, clients) are gated. If the Qck entitlement status is not `active` or `trialing`, the API returns **402** with a JSON body that includes `checkout: "/api/billing/checkout"`. Auth, health, Swagger and `/api/billing/*` are not gated.
+Authenticated tenant requests that need billing (assets, inspections, dashboard, clients) require an active or trial subscription. If the Qck entitlement status is not `active` or `trialing`, the API returns **402** with `checkout: "/api/billing/checkout"`. Auth, health, Swagger, `/api/billing/*` and `/api/public/*` are not gated.
+
+#### Plans (Starter vs Pro)
+
+Qck `planCode` is mapped onto a LiftLedger tier:
+
+| Tier | Typical Qck plan codes | Included |
+|------|------------------------|----------|
+| **Starter** | `starter`, `basic`, `lite` | Asset list and a simple examination log (start/complete) |
+| **Pro** | `pro`, `workshop`, and the local stub | Stored LOLER/PUWER certificate builders, defect workflow, client download portal |
+
+Pro-only endpoints return **402** with `feature`, `requiredPlan: "Pro"` and `checkout: "/api/billing/checkout"` when the organisation is on Starter.
 
 #### Stub mode
 
 `SubscriptionApi:UseStub` defaults to **true** in this repo so `dotnet test` and local runs work without Qck. The stub:
 
-- reports every tenant as `active` with plan `Stub (local/CI)`
+- reports every tenant as **active LiftLedger Pro** (`planCode: pro`, `planName: Pro (local/CI stub)`)
 - no-ops tenant upsert
 - returns `https://billing.stub.local/checkout/{tenantId}` and `https://billing.stub.local/portal/{tenantId}` session URLs
 
@@ -109,6 +121,43 @@ SubscriptionApi__BaseUrl="https://your-qck-subscription-host"
 SubscriptionApi__ApiKey="***"
 SubscriptionApi__ProductCode=LiftLedger
 ```
+
+### Certificates (Pro)
+
+Completing a **LOLER thorough examination** or **PUWER assessment** on Pro stores an HTML + PDF working record (`Certificate`). Records follow Schedule 1 style fields (employer, premises, SWL, tests, defects, next due, examiner) or a PUWER checklist by asset class. They are **not HSE-certified**.
+
+- `GET /api/puwer/templates` and `GET /api/puwer/templates/{category}`
+- `GET /api/certificates` / `{id}` / `{id}/html` / `{id}/pdf`
+- `GET /api/inspections/{id}/certificate` and `.pdf` — issue or return the stored document
+
+Starter may still complete a simple exam log; opening or storing a certificate is Pro.
+
+### Defect workflow (Pro)
+
+Raise from a completed examination, assign to a member, attach before/after photos, then close or mark **retest required**.
+
+- `POST /api/inspections/{id}/defects`
+- `GET /api/defects`
+- `POST /api/defects/{id}/assign`
+- `POST /api/defects/{id}/photos` (multipart `kind` + `file`, JPEG/PNG/WebP, 5 MB)
+- `POST /api/defects/{id}/close` (`requiresRetest`)
+- `POST /api/defects/{id}/retest` — starts a follow-up examination on the same asset
+
+Closing a rectified defect needs a before photo and an after photo. Retest-required needs a before photo only.
+
+### QR / identification codes
+
+Each asset can store an identification / QR payload. `GET /api/assets/by-code/{code}` resolves it (also accepts `liftledger://a/{code}` or the fleet number) and returns the last inspection/certificate. `GET /api/assets/{id}/qr` returns a PNG of `liftledger://a/{code}`.
+
+### Client download portal stub (Pro)
+
+Owner/Admin can mint a share token for a hire client. The anonymous link lists that client’s stored working records.
+
+- `GET /api/portal` — recent stored certificates for this organisation
+- `POST /api/portal/tokens` `{ clientId }`
+- `GET /api/public/portal/{token}` and `.../certificates/{id}` (HTML/PDF)
+
+The schema is created with `EnsureCreated`. If you already have a local `liftledger.dev.db` from an earlier scaffold, delete it once so the new tables are created.
 
 ### SQL Server instead of SQLite
 
@@ -138,9 +187,11 @@ cp .env.example .env
 npx expo start
 ```
 
-Screens: sign in / register, home dashboard (overdue, due soon, recent examinations), assets list/detail/add, start and complete inspection (offline copy saved on the device if the API is unreachable), examination history, settings.
+Screens: sign in / register, home dashboard (overdue, due soon, recent examinations), assets list/detail/add with QR image and `liftledger://a/{code}` deep link, LOLER thorough examination form, PUWER assessment by asset class, examination history, defect workflow (assign, before/after photos, close / retest), settings (plan tier and client portal share link).
 
-Settings shows plan/status from `GET /api/billing/entitlements`. Owners and admins can **Manage billing** or **Upgrade**, which call `/api/billing/portal` or `/api/billing/checkout` and open the returned URL with `Linking.openURL`.
+Deep link: `liftledger://a/QR-TRI-1042` (or enter the code on the Assets tab) opens the last working record or starts an examination.
+
+Settings shows plan/status and Starter vs Pro inclusions from `GET /api/billing/entitlements`. Owners and admins can **Manage billing** or **Upgrade to Pro**, which call `/api/billing/portal` or `/api/billing/checkout` and open the returned URL with `Linking.openURL`. Starter sees an upgrade gate on certificate builders, the defect workflow and the client portal.
 
 ## Tests
 
@@ -148,8 +199,8 @@ Settings shows plan/status from `GET /api/billing/entitlements`. Owners and admi
 dotnet test LiftLedger.sln
 ```
 
-Coverage includes register → tenant JWT claims, create asset + complete inspection, second-tenant 404s, dashboard due/overdue lists, stub entitlements, 402 when the subscription is inactive, and the Qck client path/header contract.
+Coverage includes register → tenant JWT claims, create asset + complete inspection, second-tenant 404s, dashboard due/overdue lists, stub Pro entitlements, 402 when the subscription is inactive, stored LOLER/PUWER certificate create, defect assign → photos → close/retest, Starter upgrade gates on certificates/defects/portal, and the Qck client path/header contract.
 
 ## Regulation-aware wording
 
-Certificate HTML/PDF files are labelled as LiftLedger working records in the style of LOLER Schedule 1. They state that they are **not HSE-certified** and are **not a legal determination of compliance**.
+Certificate HTML/PDF files are labelled as LiftLedger working records in the style of LOLER Schedule 1 or as PUWER assessment notes. They state that they are **not HSE-certified** and are **not a legal determination of compliance**. A competent person remains responsible.

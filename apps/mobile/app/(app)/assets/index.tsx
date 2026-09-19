@@ -9,6 +9,7 @@ import { colors } from '../../../src/theme';
 export default function AssetsScreen() {
   const router = useRouter();
   const [query, setQuery] = useState('');
+  const [code, setCode] = useState('');
   const [assets, setAssets] = useState<AssetSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -36,6 +37,16 @@ export default function AssetsScreen() {
       <Title>Assets</Title>
       <Subtitle>Trailers, plant and lifting equipment for this organisation only.</Subtitle>
       <Field label="Search" value={query} onChangeText={setQuery} placeholder="Fleet number, name or QR code" />
+      <Field label="Open QR / ID code" value={code} onChangeText={setCode} placeholder="QR-TRI-1042 or liftledger://a/…" />
+      <Button
+        label="Open code"
+        tone="secondary"
+        onPress={() => {
+          if (code.trim()) {
+            router.push(`/(app)/assets/code/${encodeURIComponent(code.trim())}`);
+          }
+        }}
+      />
       <Button label="Add asset" onPress={() => router.push('/(app)/assets/new')} />
       {error ? <Text style={{ color: colors.danger, marginTop: 12 }}>{error}</Text> : null}
       {loading ? <Loading /> : null}

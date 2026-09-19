@@ -214,6 +214,7 @@ public static class DatabaseSeeder
             Severity = DefectSeverity.Defect,
             Category = "Forks",
             RequiresImmediateWithdrawal = false,
+            Status = DefectStatus.Open,
             Notes = "Still within serviceable limits at time of examination. Plan replacement."
         };
 

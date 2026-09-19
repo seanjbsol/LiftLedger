@@ -3,31 +3,27 @@ import { useCallback, useState } from 'react';
 import { Linking, Text } from 'react-native';
 import { API_URL, api, ApiError } from '../../src/api';
 import { useAuth } from '../../src/auth';
-import type { BillingEntitlements } from '../../src/types';
-import { Banner, Button, Card, ScrollScreen, Subtitle, Title } from '../../src/ui';
+import { useEntitlements } from '../../src/entitlements';
+import type { BillingEntitlements, ClientDto, PortalToken } from '../../src/types';
+import { Banner, Button, Card, ScrollScreen, Subtitle, Title, UpgradeGate } from '../../src/ui';
 import { colors } from '../../src/theme';
 
 export default function SettingsScreen() {
   const { user, tenant, role, signOut } = useAuth();
+  const { billing, refresh, canUseClientPortal } = useEntitlements();
   const canManageBilling = role === 'Owner' || role === 'Admin';
-  const [billing, setBilling] = useState<BillingEntitlements | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-
-  const load = useCallback(async () => {
-    try {
-      const entitlements = await api.entitlements();
-      setBilling(entitlements);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not load billing status.');
-    }
-  }, []);
+  const [clients, setClients] = useState<ClientDto[]>([]);
+  const [share, setShare] = useState<PortalToken | null>(null);
 
   useFocusEffect(
     useCallback(() => {
-      void load();
-    }, [load])
+      void refresh();
+      if (canUseClientPortal) {
+        api.clients().then(setClients).catch(() => undefined);
+      }
+    }, [refresh, canUseClientPortal])
   );
 
   const openBilling = async (kind: 'checkout' | 'portal') => {
@@ -45,8 +41,10 @@ export default function SettingsScreen() {
     }
   };
 
-  const statusLabel = billing ? formatStatus(billing.status) : 'Loading…';
-  const planLabel = billing?.planName || billing?.planCode || 'Not selected';
+  const plan = billing as BillingEntitlements | null;
+  const statusLabel = plan ? formatStatus(plan.status) : 'Loading…';
+  const planLabel = plan?.planName || plan?.planCode || 'Not selected';
+  const tier = plan?.planTier || 'Starter';
 
   return (
     <ScrollScreen>
@@ -60,24 +58,68 @@ export default function SettingsScreen() {
         <LabelValue label="API" value={API_URL} />
       </Card>
       <Card>
-        <LabelValue label="Plan" value={planLabel} />
+        <LabelValue label="Plan" value={`${planLabel} (${tier})`} />
         <LabelValue label="Subscription" value={statusLabel} />
-        {billing?.currentPeriodEnd ? (
-          <LabelValue label="Current period ends" value={new Date(billing.currentPeriodEnd).toLocaleDateString('en-GB')} />
+        <LabelValue
+          label="Included"
+          value={
+            plan?.isPro
+              ? 'Pro: certificate builders, defect workflow, client download portal'
+              : 'Starter: asset list and simple examination log'
+          }
+        />
+        {plan?.currentPeriodEnd ? (
+          <LabelValue label="Current period ends" value={new Date(plan.currentPeriodEnd).toLocaleDateString('en-GB')} />
         ) : null}
         {canManageBilling ? (
           <>
             <Button
-              label={billing?.hasAccess ? 'Manage billing' : 'Upgrade'}
-              onPress={() => void openBilling(billing?.hasAccess ? 'portal' : 'checkout')}
+              label={plan?.hasAccess ? (plan.isPro ? 'Manage billing' : 'Upgrade to Pro') : 'Upgrade'}
+              onPress={() => void openBilling(plan?.hasAccess && plan.isPro ? 'portal' : 'checkout')}
               disabled={busy}
             />
-            {billing?.hasAccess ? (
+            {plan?.hasAccess ? (
               <Button label="Change plan" tone="secondary" onPress={() => void openBilling('checkout')} disabled={busy} />
             ) : null}
           </>
         ) : (
           <Banner text="Ask an organisation owner or admin to manage billing." />
+        )}
+      </Card>
+      <Card>
+        <LabelValue label="Client download portal" value="Share last working records with a hire customer (Pro)." />
+        {canUseClientPortal ? (
+          clients.length === 0 ? (
+            <Banner text="Add a client to create a download link." />
+          ) : (
+            <>
+              {clients.map((client) => (
+                <Button
+                  key={client.id}
+                  label={`Share link for ${client.name}`}
+                  tone="secondary"
+                  onPress={() =>
+                    void (async () => {
+                      try {
+                        setShare(await api.createPortalToken(client.id));
+                        setError(null);
+                      } catch (err) {
+                        setError(err instanceof Error ? err.message : 'Could not create a portal link.');
+                      }
+                    })()
+                  }
+                />
+              ))}
+              {share ? (
+                <Banner
+                  tone="success"
+                  text={`${share.clientName}: ${API_URL}${share.publicUrl}`}
+                />
+              ) : null}
+            </>
+          )
+        ) : (
+          <UpgradeGate feature="Client download portal" />
         )}
       </Card>
       {error ? <Banner tone="danger" text={error} /> : null}

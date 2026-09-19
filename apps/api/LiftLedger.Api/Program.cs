@@ -57,6 +57,9 @@ public partial class Program
         builder.Services.AddScoped<DashboardService>();
         builder.Services.AddScoped<ClientService>();
         builder.Services.AddScoped<CertificateService>();
+        builder.Services.AddScoped<DefectService>();
+        builder.Services.AddScoped<ClientPortalService>();
+        builder.Services.AddScoped<IFeatureGate, FeatureGate>();
 
         builder.Services.Configure<SubscriptionApiOptions>(
             builder.Configuration.GetSection(SubscriptionApiOptions.SectionName));

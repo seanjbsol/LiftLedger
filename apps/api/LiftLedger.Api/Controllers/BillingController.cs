@@ -32,6 +32,7 @@ public class BillingController : ControllerBase
     public async Task<ActionResult<BillingEntitlementsResponse>> Entitlements(CancellationToken cancellationToken)
     {
         var entitlements = await _subscriptions.GetEntitlementsAsync(_currentUser.TenantId, cancellationToken);
+        var plan = PlanCatalog.From(entitlements);
         return Ok(new BillingEntitlementsResponse(
             entitlements.ProductCode,
             _currentUser.TenantId,
@@ -39,7 +40,12 @@ public class BillingController : ControllerBase
             entitlements.PlanCode,
             entitlements.PlanName,
             entitlements.CurrentPeriodEnd,
-            entitlements.HasAccess));
+            entitlements.HasAccess,
+            plan.PlanTier,
+            plan.IsPro,
+            plan.CanUseCertificates,
+            plan.CanUseDefects,
+            plan.CanUseClientPortal));
     }
 
     /// <summary>Proxies to Qck create-checkout-session. Owner/Admin only.</summary>
