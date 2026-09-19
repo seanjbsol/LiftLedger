@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import { useRouter } from 'expo-router';
 import {
   ActivityIndicator,
   Pressable,
@@ -110,12 +111,35 @@ export function Pill({ label, tone }: { label: string; tone?: string }) {
     Pass: { bg: '#DCFAE6', fg: colors.success },
     PassWithDefects: { bg: '#FEF0C7', fg: colors.dueSoon },
     Fail: { bg: '#FEE4E2', fg: colors.overdue },
+    Assigned: { bg: '#E8EEF4', fg: colors.muted },
+    Open: { bg: '#FEF0C7', fg: colors.dueSoon },
+    Closed: { bg: '#DCFAE6', fg: colors.success },
+    RetestRequired: { bg: '#FEE4E2', fg: colors.overdue },
     Draft: { bg: '#E8EEF4', fg: colors.muted }
   };
   const colorsFor = map[tone ?? label] ?? { bg: '#E8EEF4', fg: colors.muted };
   return (
     <View style={[styles.pill, { backgroundColor: colorsFor.bg }]}>
       <Text style={{ color: colorsFor.fg, fontSize: 12, fontWeight: '700' }}>{label}</Text>
+    </View>
+  );
+}
+
+export function UpgradeGate({
+  feature,
+  text
+}: {
+  feature: string;
+  text?: string;
+}) {
+  const router = useRouter();
+  return (
+    <View>
+      <Banner
+        tone="info"
+        text={text ?? `${feature} is included on LiftLedger Pro. Starter covers the asset list and a simple examination log.`}
+      />
+      <Button label="View plans in Settings" tone="secondary" onPress={() => router.push('/(app)/settings')} />
     </View>
   );
 }

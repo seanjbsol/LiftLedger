@@ -9,7 +9,12 @@ public record BillingEntitlementsResponse(
     string? PlanCode,
     string? PlanName,
     DateTimeOffset? CurrentPeriodEnd,
-    bool HasAccess);
+    bool HasAccess,
+    string PlanTier = "Starter",
+    bool IsPro = false,
+    bool CanUseCertificates = false,
+    bool CanUseDefects = false,
+    bool CanUseClientPortal = false);
 
 public record CreateCheckoutRequest
 {

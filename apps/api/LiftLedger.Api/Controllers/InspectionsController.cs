@@ -12,11 +12,13 @@ public class InspectionsController : ControllerBase
 {
     private readonly InspectionService _inspections;
     private readonly CertificateService _certificates;
+    private readonly DefectService _defects;
 
-    public InspectionsController(InspectionService inspections, CertificateService certificates)
+    public InspectionsController(InspectionService inspections, CertificateService certificates, DefectService defects)
     {
         _inspections = inspections;
         _certificates = certificates;
+        _defects = defects;
     }
 
     [HttpGet]
@@ -49,19 +51,27 @@ public class InspectionsController : ControllerBase
         return Ok(await _inspections.CompleteAsync(id, request, cancellationToken));
     }
 
+    [HttpPost("{id:guid}/defects")]
+    public async Task<ActionResult<DefectDto>> RaiseDefect(
+        Guid id,
+        RaiseDefectRequest request,
+        CancellationToken cancellationToken)
+    {
+        var created = await _defects.RaiseFromInspectionAsync(id, request, cancellationToken);
+        return Created($"/api/defects/{created.Id}", created);
+    }
+
     [HttpGet("{id:guid}/certificate")]
     public async Task<IActionResult> CertificateHtml(Guid id, CancellationToken cancellationToken)
     {
-        var inspection = await _certificates.LoadCompletedAsync(id, cancellationToken);
-        return Content(_certificates.BuildHtml(inspection), "text/html; charset=utf-8");
+        var document = await _certificates.GetOrIssueDocumentAsync(id, cancellationToken);
+        return Content(document.Html, "text/html; charset=utf-8");
     }
 
     [HttpGet("{id:guid}/certificate.pdf")]
     public async Task<IActionResult> CertificatePdf(Guid id, CancellationToken cancellationToken)
     {
-        var inspection = await _certificates.LoadCompletedAsync(id, cancellationToken);
-        var pdf = _certificates.BuildPdf(inspection);
-        var name = $"{inspection.CertificateNumber ?? inspection.Id.ToString("N")}.pdf";
-        return File(pdf, "application/pdf", name);
+        var document = await _certificates.GetOrIssueDocumentAsync(id, cancellationToken);
+        return File(document.Pdf, "application/pdf", document.FileName);
     }
 }

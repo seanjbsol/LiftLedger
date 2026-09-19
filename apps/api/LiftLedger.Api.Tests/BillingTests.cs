@@ -32,7 +32,10 @@ public class BillingStubTests : IClassFixture<TestAppFactory>
         Assert.Equal(login.Tenant.Id, entitlements.TenantId);
         Assert.Equal("active", entitlements.Status);
         Assert.True(entitlements.HasAccess);
-        Assert.Equal("stub", entitlements.PlanCode);
+        Assert.Equal("pro", entitlements.PlanCode);
+        Assert.Equal("Pro", entitlements.PlanTier);
+        Assert.True(entitlements.IsPro);
+        Assert.True(entitlements.CanUseCertificates);
     }
 
     [Fact]

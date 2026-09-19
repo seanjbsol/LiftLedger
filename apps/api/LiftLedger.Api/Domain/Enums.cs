@@ -44,3 +44,30 @@ public enum DefectSeverity
     Defect = 1,
     ImmediateDanger = 2
 }
+
+public enum DefectStatus
+{
+    Open = 0,
+    Assigned = 1,
+    Closed = 2,
+    RetestRequired = 3
+}
+
+public enum DefectPhotoKind
+{
+    Before = 0,
+    After = 1
+}
+
+public enum CertificateKind
+{
+    LolerThoroughExamination = 0,
+    PuwerAssessment = 1
+}
+
+public enum PuwerItemResult
+{
+    Suitable = 0,
+    ActionRequired = 1,
+    NotApplicable = 2
+}

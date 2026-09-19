@@ -25,6 +25,9 @@ public class AppDbContext : DbContext
     public DbSet<Asset> Assets => Set<Asset>();
     public DbSet<Inspection> Inspections => Set<Inspection>();
     public DbSet<Defect> Defects => Set<Defect>();
+    public DbSet<DefectPhoto> DefectPhotos => Set<DefectPhoto>();
+    public DbSet<Certificate> Certificates => Set<Certificate>();
+    public DbSet<ClientPortalToken> ClientPortalTokens => Set<ClientPortalToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -79,6 +82,7 @@ public class AppDbContext : DbContext
             entity.Property(e => e.SafeWorkingLoad).HasMaxLength(64);
             entity.Property(e => e.Category).HasConversion<string>().HasMaxLength(32);
             entity.HasIndex(e => new { e.TenantId, e.AssetNumber }).IsUnique();
+            entity.HasIndex(e => new { e.TenantId, e.IdentificationCode });
             entity.HasOne(e => e.Tenant).WithMany(t => t.Assets).HasForeignKey(e => e.TenantId).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(e => e.Client).WithMany(c => c.Assets).HasForeignKey(e => e.ClientId).OnDelete(DeleteBehavior.SetNull);
             entity.HasOne(e => e.Site).WithMany(s => s.Assets).HasForeignKey(e => e.SiteId).OnDelete(DeleteBehavior.SetNull);
@@ -92,7 +96,9 @@ public class AppDbContext : DbContext
             entity.Property(e => e.ExaminationType).HasConversion<string>().HasMaxLength(32);
             entity.Property(e => e.Status).HasConversion<string>().HasMaxLength(32);
             entity.Property(e => e.Result).HasConversion<string>().HasMaxLength(32);
-            entity.HasIndex(e => new { e.TenantId, e.CertificateNumber }).IsUnique();
+            entity.HasIndex(e => new { e.TenantId, e.CertificateNumber })
+                .IsUnique()
+                .HasFilter("CertificateNumber IS NOT NULL");
             entity.HasOne(e => e.Tenant).WithMany().HasForeignKey(e => e.TenantId).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(e => e.Asset).WithMany(a => a.Inspections).HasForeignKey(e => e.AssetId).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(e => e.Examiner).WithMany().HasForeignKey(e => e.ExaminerUserId).OnDelete(DeleteBehavior.Restrict);
@@ -105,8 +111,45 @@ public class AppDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Description).HasMaxLength(2000).IsRequired();
             entity.Property(e => e.Severity).HasConversion<string>().HasMaxLength(32);
+            entity.Property(e => e.Status).HasConversion<string>().HasMaxLength(32);
             entity.HasOne(e => e.Inspection).WithMany(i => i.Defects).HasForeignKey(e => e.InspectionId).OnDelete(DeleteBehavior.Cascade);
             entity.HasOne(e => e.Asset).WithMany().HasForeignKey(e => e.AssetId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.AssignedTo).WithMany().HasForeignKey(e => e.AssignedToUserId).OnDelete(DeleteBehavior.NoAction).IsRequired(false);
+            entity.HasOne(e => e.ClosedBy).WithMany().HasForeignKey(e => e.ClosedByUserId).OnDelete(DeleteBehavior.NoAction).IsRequired(false);
+            entity.HasOne(e => e.RetestInspection).WithMany().HasForeignKey(e => e.RetestInspectionId).OnDelete(DeleteBehavior.NoAction).IsRequired(false);
+        });
+
+        modelBuilder.Entity<DefectPhoto>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.FileName).HasMaxLength(200).IsRequired();
+            entity.Property(e => e.ContentType).HasMaxLength(100).IsRequired();
+            entity.Property(e => e.Kind).HasConversion<string>().HasMaxLength(16);
+            entity.HasOne(e => e.Defect).WithMany(d => d.Photos).HasForeignKey(e => e.DefectId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.UploadedBy).WithMany().HasForeignKey(e => e.UploadedByUserId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Certificate>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.CertificateNumber).HasMaxLength(64).IsRequired();
+            entity.Property(e => e.TemplateCode).HasMaxLength(64).IsRequired();
+            entity.Property(e => e.Kind).HasConversion<string>().HasMaxLength(40);
+            entity.HasIndex(e => new { e.TenantId, e.InspectionId }).IsUnique();
+            entity.HasIndex(e => new { e.TenantId, e.CertificateNumber });
+            entity.HasOne(e => e.Inspection).WithMany(i => i.Certificates).HasForeignKey(e => e.InspectionId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Asset).WithMany().HasForeignKey(e => e.AssetId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Client).WithMany().HasForeignKey(e => e.ClientId).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<ClientPortalToken>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Token).HasMaxLength(80).IsRequired();
+            entity.Property(e => e.Label).HasMaxLength(200);
+            entity.HasIndex(e => e.Token).IsUnique();
+            entity.HasOne(e => e.Tenant).WithMany().HasForeignKey(e => e.TenantId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Client).WithMany().HasForeignKey(e => e.ClientId).OnDelete(DeleteBehavior.Cascade);
         });
 
         ApplyTenantQueryFilters(modelBuilder);

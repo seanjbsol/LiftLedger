@@ -49,12 +49,13 @@ public class DashboardService
         var recent = await _db.Inspections.AsNoTracking()
             .Include(i => i.Asset)
             .Include(i => i.Examiner)
+            .Include(i => i.Certificates)
             .OrderByDescending(i => i.CompletedAt ?? i.CreatedAt)
             .Take(8)
             .ToListAsync(cancellationToken);
 
         var openDefects = await _db.Defects.AsNoTracking()
-            .CountAsync(d => d.RectifiedAt == null && d.Severity != DefectSeverity.Observation, cancellationToken);
+            .CountAsync(d => d.Status != DefectStatus.Closed && d.Severity != DefectSeverity.Observation, cancellationToken);
 
         return new DashboardResponse(
             AuthService.MapTenant(tenant),

@@ -45,6 +45,14 @@ export default function AppTabs() {
         }}
       />
       <Tabs.Screen
+        name="defects"
+        options={{
+          headerShown: false,
+          title: 'Defects',
+          tabBarLabel: ({ focused }) => <TabLabel label="Defects" focused={focused} />
+        }}
+      />
+      <Tabs.Screen
         name="settings"
         options={{ title: 'Settings', tabBarLabel: ({ focused }) => <TabLabel label="Settings" focused={focused} /> }}
       />

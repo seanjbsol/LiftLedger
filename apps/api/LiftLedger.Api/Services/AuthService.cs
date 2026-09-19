@@ -117,6 +117,15 @@ public class AuthService
             _currentUser.Role.ToString());
     }
 
+    public async Task<IReadOnlyList<MemberDto>> ListMembersAsync(CancellationToken cancellationToken)
+    {
+        var members = await _db.Memberships.AsNoTracking()
+            .Include(m => m.User)
+            .OrderBy(m => m.User.FullName)
+            .ToListAsync(cancellationToken);
+        return members.Select(m => new MemberDto(m.UserId, m.User.FullName, m.User.Email, m.Role)).ToList();
+    }
+
     private AuthResponse CreateAuthResponse(User user, Tenant tenant, MembershipRole role)
     {
         var token = _tokens.CreateToken(user, tenant, role);

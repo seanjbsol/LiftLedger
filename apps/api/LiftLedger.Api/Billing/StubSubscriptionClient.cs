@@ -3,7 +3,8 @@ using Microsoft.Extensions.Options;
 namespace LiftLedger.Api.Billing;
 
 /// <summary>
-/// Local/CI stand-in for the QckApp Subscription API. Every tenant is treated as active.
+/// Local/CI stand-in for the QckApp Subscription API. Every tenant is treated as
+/// an active LiftLedger Pro subscriber.
 /// </summary>
 public sealed class StubSubscriptionClient : ISubscriptionClient
 {
@@ -23,8 +24,8 @@ public sealed class StubSubscriptionClient : ISubscriptionClient
             ProductCode = _options.ProductCode,
             TenantId = tenantId.ToString(),
             Status = "active",
-            PlanCode = "stub",
-            PlanName = "Stub (local/CI)"
+            PlanCode = "pro",
+            PlanName = "Pro (local/CI stub)"
         });
     }
 

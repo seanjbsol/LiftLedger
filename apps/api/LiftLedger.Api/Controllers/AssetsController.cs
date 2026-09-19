@@ -1,4 +1,5 @@
 using LiftLedger.Api.Contracts;
+using LiftLedger.Api.Domain;
 using LiftLedger.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -23,10 +24,23 @@ public class AssetsController : ControllerBase
         return Ok(await _assets.ListAsync(q, cancellationToken));
     }
 
+    [HttpGet("by-code/{code}")]
+    public async Task<ActionResult<AssetScanResponse>> ByCode(string code, CancellationToken cancellationToken)
+    {
+        return Ok(await _assets.ResolveByCodeAsync(code, cancellationToken));
+    }
+
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<AssetDetail>> Get(Guid id, CancellationToken cancellationToken)
     {
         return Ok(await _assets.GetAsync(id, cancellationToken));
+    }
+
+    [HttpGet("{id:guid}/qr")]
+    public async Task<IActionResult> Qr(Guid id, CancellationToken cancellationToken)
+    {
+        var (png, fileName) = await _assets.QrPngAsync(id, cancellationToken);
+        return File(png, "image/png", fileName);
     }
 
     [HttpPost]

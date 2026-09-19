@@ -68,7 +68,9 @@ export default function HomeScreen() {
           <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
             <Stat label="Overdue" value={data.overdueCount} />
             <Stat label="Due soon" value={data.dueSoonCount} />
-            <Stat label="Open defects" value={data.openDefectCount} />
+            <Pressable style={{ flex: 1 }} onPress={() => router.push('/(app)/defects')}>
+              <Stat label="Open defects" value={data.openDefectCount} />
+            </Pressable>
           </View>
           <Section title="Overdue" empty="No overdue examinations.">
             {data.overdue.map((asset) => (

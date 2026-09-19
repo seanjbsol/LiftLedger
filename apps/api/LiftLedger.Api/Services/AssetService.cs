@@ -4,6 +4,7 @@ using LiftLedger.Api.Data;
 using LiftLedger.Api.Domain;
 using LiftLedger.Api.Middleware;
 using Microsoft.EntityFrameworkCore;
+using QRCoder;
 
 namespace LiftLedger.Api.Services;
 
@@ -50,6 +51,7 @@ public class AssetService
                         .Include(a => a.Client)
                         .Include(a => a.Site)
                         .Include(a => a.Inspections).ThenInclude(i => i.Examiner)
+                        .Include(a => a.Inspections).ThenInclude(i => i.Certificates)
                         .FirstOrDefaultAsync(a => a.Id == id, cancellationToken)
                     ?? throw new KeyNotFoundException("Asset was not found.");
 
@@ -134,6 +136,66 @@ public class AssetService
         await _db.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task<AssetScanResponse> ResolveByCodeAsync(string code, CancellationToken cancellationToken)
+    {
+        var term = code.Trim();
+        if (term.StartsWith("liftledger://", StringComparison.OrdinalIgnoreCase))
+        {
+            var slash = term.LastIndexOf('/');
+            term = slash >= 0 ? term[(slash + 1)..] : term;
+        }
+
+        term = Uri.UnescapeDataString(term);
+        var lowered = term.ToLower();
+
+        var asset = await _db.Assets.AsNoTracking()
+                        .Include(a => a.Inspections).ThenInclude(i => i.Certificates)
+                        .Where(a => !a.IsArchived)
+                        .FirstOrDefaultAsync(
+                            a => (a.IdentificationCode != null && a.IdentificationCode.ToLower() == lowered)
+                                 || a.AssetNumber.ToLower() == lowered,
+                            cancellationToken)
+                    ?? throw new KeyNotFoundException("No asset matched that QR or identification code.");
+
+        _currentUser.EnsureTenant(asset);
+
+        var last = asset.Inspections
+            .Where(i => i.Status == InspectionStatus.Completed)
+            .OrderByDescending(i => i.ExaminationDate)
+            .ThenByDescending(i => i.CompletedAt)
+            .FirstOrDefault();
+
+        var lastCert = last?.Certificates.OrderByDescending(c => c.IssuedAt).FirstOrDefault();
+        var payload = asset.IdentificationCode ?? asset.AssetNumber;
+
+        return new AssetScanResponse(
+            asset.Id,
+            asset.AssetNumber,
+            asset.Name,
+            asset.Category,
+            asset.IdentificationCode,
+            DeepLinkFor(payload),
+            last?.Id,
+            lastCert?.Id,
+            last?.CertificateNumber,
+            last?.ExaminationDate);
+    }
+
+    public async Task<(byte[] Png, string FileName)> QrPngAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var asset = await _db.Assets.AsNoTracking().FirstOrDefaultAsync(a => a.Id == id, cancellationToken)
+                    ?? throw new KeyNotFoundException("Asset was not found.");
+        _currentUser.EnsureTenant(asset);
+
+        var payload = DeepLinkFor(asset.IdentificationCode ?? asset.AssetNumber);
+        using var generator = new QRCodeGenerator();
+        using var data = generator.CreateQrCode(payload, QRCodeGenerator.ECCLevel.Q);
+        var png = new PngByteQRCode(data).GetGraphic(8);
+        return (png, $"{asset.AssetNumber}-qr.png");
+    }
+
+    public static string DeepLinkFor(string code) => $"liftledger://a/{Uri.EscapeDataString(code)}";
+
     private async Task EnsureUniqueNumber(string assetNumber, Guid? excludeId, CancellationToken cancellationToken)
     {
         var number = assetNumber.Trim().ToUpperInvariant();
@@ -195,7 +257,8 @@ internal static class Mapping
             inspection.ExaminationDate,
             inspection.NextDueDate,
             inspection.CertificateNumber,
-            inspection.Examiner?.FullName ?? string.Empty);
+            inspection.Examiner?.FullName ?? string.Empty,
+            inspection.Certificates?.OrderByDescending(c => c.IssuedAt).FirstOrDefault()?.Id);
 
     public static AssetDetail ToDetail(Asset asset, IReadOnlyList<InspectionSummary> inspections) =>
         new(
