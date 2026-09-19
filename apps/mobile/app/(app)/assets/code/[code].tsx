@@ -1,8 +1,8 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { api, ApiError } from '../../../src/api';
-import { useEntitlements } from '../../../src/entitlements';
-import type { AssetScan } from '../../../src/types';
+import { api, ApiError } from '../../../../src/api';
+import { useEntitlements } from '../../../../src/entitlements';
+import type { AssetScan } from '../../../../src/types';
 import {
   Banner,
   Button,
@@ -13,7 +13,7 @@ import {
   Title,
   UpgradeGate,
   formatDate
-} from '../../../src/ui';
+} from '../../../../src/ui';
 
 export default function AssetCodeScreen() {
   const { code } = useLocalSearchParams<{ code: string }>();
