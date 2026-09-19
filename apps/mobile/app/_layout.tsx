@@ -38,7 +38,7 @@ function Gate() {
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.paper } }}>
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="(app)" />
-      <Stack.Screen name="a" />
+      <Stack.Screen name="a/[code]" />
     </Stack>
   );
 }
