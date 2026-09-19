@@ -1,0 +1,37 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "apps", "apps", "{C53147C8-4437-4B09-9721-E2B31BD1A6F8}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "api", "api", "{B998F64D-F582-4471-9CA3-9D34BAEE912F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LiftLedger.Api", "apps\api\LiftLedger.Api\LiftLedger.Api.csproj", "{6171EF6A-8D7C-4DC2-8BC3-5F1B9C818DB0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LiftLedger.Api.Tests", "apps\api\LiftLedger.Api.Tests\LiftLedger.Api.Tests.csproj", "{C97DEB82-CB93-42C9-9C9D-87513519D071}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6171EF6A-8D7C-4DC2-8BC3-5F1B9C818DB0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6171EF6A-8D7C-4DC2-8BC3-5F1B9C818DB0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6171EF6A-8D7C-4DC2-8BC3-5F1B9C818DB0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6171EF6A-8D7C-4DC2-8BC3-5F1B9C818DB0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C97DEB82-CB93-42C9-9C9D-87513519D071}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C97DEB82-CB93-42C9-9C9D-87513519D071}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C97DEB82-CB93-42C9-9C9D-87513519D071}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C97DEB82-CB93-42C9-9C9D-87513519D071}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{B998F64D-F582-4471-9CA3-9D34BAEE912F} = {C53147C8-4437-4B09-9721-E2B31BD1A6F8}
+		{6171EF6A-8D7C-4DC2-8BC3-5F1B9C818DB0} = {B998F64D-F582-4471-9CA3-9D34BAEE912F}
+		{C97DEB82-CB93-42C9-9C9D-87513519D071} = {B998F64D-F582-4471-9CA3-9D34BAEE912F}
+	EndGlobalSection
+EndGlobal
