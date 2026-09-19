@@ -19,7 +19,9 @@ export default function AppTabs() {
         headerTitleStyle: { fontWeight: '800' },
         tabBarStyle: { backgroundColor: colors.navy, borderTopColor: colors.navyMid, height: 58 },
         tabBarActiveTintColor: colors.amber,
-        tabBarInactiveTintColor: '#9AA8B6'
+        tabBarInactiveTintColor: '#9AA8B6',
+        tabBarShowLabel: true,
+        tabBarIcon: () => null
       }}
     >
       <Tabs.Screen
