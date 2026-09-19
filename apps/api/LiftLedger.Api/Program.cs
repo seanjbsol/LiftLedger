@@ -1,13 +1,15 @@
 using System.Text;
 using System.Text.Json.Serialization;
 using LiftLedger.Api.Auth;
+using LiftLedger.Api.Billing;
 using LiftLedger.Api.Data;
 using LiftLedger.Api.Middleware;
 using LiftLedger.Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 
 namespace LiftLedger.Api;
 
@@ -40,15 +42,9 @@ public partial class Program
                 BearerFormat = "JWT",
                 In = ParameterLocation.Header
             });
-            options.AddSecurityRequirement(new OpenApiSecurityRequirement
+            options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
             {
-                {
-                    new OpenApiSecurityScheme
-                    {
-                        Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
-                    },
-                    Array.Empty<string>()
-                }
+                [new OpenApiSecuritySchemeReference("Bearer", document)] = []
             });
         });
 
@@ -61,6 +57,29 @@ public partial class Program
         builder.Services.AddScoped<DashboardService>();
         builder.Services.AddScoped<ClientService>();
         builder.Services.AddScoped<CertificateService>();
+
+        builder.Services.Configure<SubscriptionApiOptions>(
+            builder.Configuration.GetSection(SubscriptionApiOptions.SectionName));
+        builder.Services.AddHttpClient<SubscriptionClient>((sp, client) =>
+        {
+            var options = sp.GetRequiredService<IOptions<SubscriptionApiOptions>>().Value;
+            if (!string.IsNullOrWhiteSpace(options.BaseUrl)
+                && Uri.TryCreate(options.BaseUrl, UriKind.Absolute, out var baseUrl))
+            {
+                client.BaseAddress = new Uri(baseUrl.ToString().TrimEnd('/') + "/");
+            }
+
+            client.Timeout = TimeSpan.FromSeconds(15);
+            client.DefaultRequestHeaders.Accept.ParseAdd("application/json");
+        });
+        builder.Services.AddSingleton<StubSubscriptionClient>();
+        builder.Services.AddTransient<ISubscriptionClient>(sp =>
+        {
+            var options = sp.GetRequiredService<IOptions<SubscriptionApiOptions>>().Value;
+            return options.UseStub
+                ? sp.GetRequiredService<StubSubscriptionClient>()
+                : sp.GetRequiredService<SubscriptionClient>();
+        });
 
         var databaseProvider = builder.Configuration["Database:Provider"] ?? "Sqlite";
         var connectionString = builder.Configuration["Database:ConnectionString"]
@@ -126,6 +145,7 @@ public partial class Program
 
         app.UseAuthentication();
         app.UseAuthorization();
+        app.UseMiddleware<SubscriptionGateMiddleware>();
         app.MapControllers();
         app.MapGet("/", () => Results.Redirect("/swagger"));
 

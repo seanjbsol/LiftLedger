@@ -25,6 +25,8 @@ public class TestAppFactory : WebApplicationFactory<Program>, IAsyncLifetime
         builder.UseSetting("Jwt:Audience", "LiftLedger.Clients");
         builder.UseSetting("Seed:Enabled", "true");
         builder.UseSetting("Database:Provider", "Sqlite");
+        builder.UseSetting("SubscriptionApi:UseStub", "true");
+        builder.UseSetting("SubscriptionApi:ProductCode", "LiftLedger");
 
         builder.ConfigureTestServices(services =>
         {

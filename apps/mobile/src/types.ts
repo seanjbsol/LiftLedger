@@ -118,3 +118,17 @@ export type DefectInput = {
   requiresImmediateWithdrawal: boolean;
   notes?: string;
 };
+
+export type BillingEntitlements = {
+  productCode: string;
+  tenantId: string;
+  status: string;
+  planCode?: string | null;
+  planName?: string | null;
+  currentPeriodEnd?: string | null;
+  hasAccess: boolean;
+};
+
+export type BillingSession = {
+  url: string;
+};

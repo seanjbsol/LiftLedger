@@ -1,9 +1,11 @@
 using LiftLedger.Api.Auth;
+using LiftLedger.Api.Billing;
 using LiftLedger.Api.Contracts;
 using LiftLedger.Api.Data;
 using LiftLedger.Api.Domain;
 using LiftLedger.Api.Middleware;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace LiftLedger.Api.Services;
 
@@ -12,12 +14,24 @@ public class AuthService
     private readonly AppDbContext _db;
     private readonly JwtTokenService _tokens;
     private readonly ICurrentUser _currentUser;
+    private readonly ISubscriptionClient _subscriptions;
+    private readonly SubscriptionApiOptions _subscriptionOptions;
+    private readonly ILogger<AuthService> _logger;
 
-    public AuthService(AppDbContext db, JwtTokenService tokens, ICurrentUser currentUser)
+    public AuthService(
+        AppDbContext db,
+        JwtTokenService tokens,
+        ICurrentUser currentUser,
+        ISubscriptionClient subscriptions,
+        IOptions<SubscriptionApiOptions> subscriptionOptions,
+        ILogger<AuthService> logger)
     {
         _db = db;
         _tokens = tokens;
         _currentUser = currentUser;
+        _subscriptions = subscriptions;
+        _subscriptionOptions = subscriptionOptions.Value;
+        _logger = logger;
     }
 
     public async Task<AuthResponse> RegisterAsync(RegisterRequest request, CancellationToken cancellationToken)
@@ -54,6 +68,8 @@ public class AuthService
         _db.Users.Add(user);
         _db.Memberships.Add(membership);
         await _db.SaveChangesAsync(cancellationToken);
+
+        await UpsertBillingTenantAsync(tenant, user.Email, cancellationToken);
 
         return CreateAuthResponse(user, tenant, membership.Role);
     }
@@ -109,6 +125,29 @@ public class AuthService
             new UserSummary(user.Id, user.Email, user.FullName),
             MapTenant(tenant),
             role.ToString());
+    }
+
+    private async Task UpsertBillingTenantAsync(Tenant tenant, string ownerEmail, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _subscriptions.UpsertTenantAsync(
+                new UpsertTenantRequest
+                {
+                    ProductCode = _subscriptionOptions.ProductCode,
+                    ExternalTenantId = tenant.Id.ToString(),
+                    Name = tenant.Name,
+                    OwnerEmail = ownerEmail
+                },
+                cancellationToken);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogWarning(
+                ex,
+                "Failed to upsert organisation {TenantId} to the Qck subscription API",
+                tenant.Id);
+        }
     }
 
     internal static TenantSummary MapTenant(Tenant tenant) =>
