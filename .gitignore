@@ -1,0 +1,49 @@
+# Build
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.dbmdl
+*.jfm
+*.log
+
+# Databases
+*.db
+*.db-shm
+*.db-wal
+liftledger.dev.db
+
+# Secrets / env
+.env
+.env.*
+!.env.example
+appsettings.*.local.json
+*.pfx
+
+# Node / Expo
+node_modules/
+.expo/
+.expo-shared/
+dist/
+web-build/
+*.jsbundle
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vs/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+
+# Coverage / test
+TestResults/
+coverage/
+*.coverage
+*.coveragexml

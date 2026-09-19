@@ -1,0 +1,13 @@
+# Optional SQL Server for local/prod-like development.
+# Default LiftLedger API still uses SQLite (see README).
+# Swap the API to this instance with:
+#   Database__Provider=SqlServer
+#   Database__ConnectionString=Server=localhost,1433;Database=LiftLedger;User Id=sa;Password=Your_password123;TrustServerCertificate=True
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "Your_password123"
+    ports:
+      - "1433:1433"

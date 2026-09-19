@@ -1,0 +1,33 @@
+{
+  "expo": {
+    "name": "LiftLedger",
+    "slug": "liftledger",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "scheme": "liftledger",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "uk.liftledger.mobile"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#122033",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "package": "uk.liftledger.mobile",
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-status-bar"
+    ]
+  }
+}
