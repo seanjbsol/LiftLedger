@@ -35,10 +35,7 @@ export default function SettingsScreen() {
     setError(null);
     try {
       const session = kind === 'portal' ? await api.portal() : await api.checkout();
-      const opened = await Linking.openURL(session.url);
-      if (!opened) {
-        setError('Could not open the billing page on this device.');
-      }
+      await Linking.openURL(session.url);
     } catch (err) {
       const message =
         err instanceof ApiError ? err.message : err instanceof Error ? err.message : 'Billing request failed.';
