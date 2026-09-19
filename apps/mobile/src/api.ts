@@ -2,6 +2,8 @@ import type {
   AssetDetail,
   AssetSummary,
   AuthResponse,
+  BillingEntitlements,
+  BillingSession,
   DashboardResponse,
   DefectInput,
   InspectionDetail,
@@ -98,5 +100,10 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(body)
     }),
-  certificateUrl: (id: string) => `${API_URL}/api/inspections/${id}/certificate`
+  certificateUrl: (id: string) => `${API_URL}/api/inspections/${id}/certificate`,
+  entitlements: () => request<BillingEntitlements>('/api/billing/entitlements'),
+  checkout: () =>
+    request<BillingSession>('/api/billing/checkout', { method: 'POST', body: JSON.stringify({}) }),
+  portal: () =>
+    request<BillingSession>('/api/billing/portal', { method: 'POST', body: JSON.stringify({}) })
 };

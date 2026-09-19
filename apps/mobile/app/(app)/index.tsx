@@ -1,7 +1,7 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState, type ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
-import { api } from '../../src/api';
+import { api, ApiError } from '../../src/api';
 import { useAuth } from '../../src/auth';
 import { listOfflineDrafts, type OfflineDraft } from '../../src/drafts';
 import type { DashboardResponse } from '../../src/types';
@@ -30,7 +30,11 @@ export default function HomeScreen() {
           }
         } catch (err) {
           if (!cancelled) {
-            setError(err instanceof Error ? err.message : 'Could not load dashboard.');
+            if (err instanceof ApiError && err.status === 402) {
+              setError('An active LiftLedger subscription is required. Open Settings to manage billing.');
+            } else {
+              setError(err instanceof Error ? err.message : 'Could not load dashboard.');
+            }
           }
         } finally {
           if (!cancelled) {
